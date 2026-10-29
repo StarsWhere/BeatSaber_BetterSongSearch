@@ -7,3 +7,15 @@ HarmonyPatches/RemoveSplashscreen.cs
 HarmonyPatchHelper.cs
 Screenshots/SocialPreview.jpg
 /.vs
+
+# Local compatibility build inputs and outputs
+/.tmp/
+/releases/
+**/bin/
+**/obj/
+**/__pycache__/
+*.suo
+/Beat Saber_Data/
+/UserData/
+/Plugins/
+/Libs/
