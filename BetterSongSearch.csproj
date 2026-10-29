@@ -1,194 +1,46 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net48</TargetFramework>
-    <OutputType>Library</OutputType>
-    <LangVersion>8</LangVersion>
-    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
-    <RootNamespace>BetterSongSearch</RootNamespace>
-    <LocalRefsDir Condition="Exists('..\Refs')">..\Refs</LocalRefsDir>
-    <BeatSaberDir>$(LocalRefsDir)</BeatSaberDir>
-    <AppOutputBase>$(MSBuildProjectDirectory)\</AppOutputBase>
-    <Nullable>disable</Nullable>
-    <Product>BetterSongSearch</Product>
-    <Company />
-    <Authors>Kinsi55</Authors>
-    <Copyright>Kinsi55</Copyright>
-    <RepositoryType></RepositoryType>
-    <RepositoryUrl></RepositoryUrl>
-    <Description></Description>
-    <Platforms>x64</Platforms>
-    <OutputPath>bin\</OutputPath>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <TargetFramework>net472</TargetFramework>
+    <LangVersion>12</LangVersion>
+    <PlatformTarget>x64</PlatformTarget>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <Import Project="SuppressRefereces.targets" />
-
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <AssemblyName>BetterSongSearch</AssemblyName>
+    <RootNamespace>BetterSongSearch</RootNamespace>
+    <Version>0.8.2</Version>
+    <InformationalVersion>0.8.2+bs1.45.2.download1</InformationalVersion>
+    <EnableFrameworkPathOverride>true</EnableFrameworkPathOverride>
+    <FrameworkPathOverride>$(GameRoot)/Beat Saber_Data/Managed</FrameworkPathOverride>
+    <OutputPath>$(MSBuildProjectDirectory)/.tmp/out/</OutputPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+    <Deterministic>true</Deterministic>
     <DebugType>portable</DebugType>
-    <DebugSymbols>true</DebugSymbols>
-    <OutputPath>bin\Debug</OutputPath>
+    <NoWarn>$(NoWarn);CS0649;CS0414;CS0618</NoWarn>
   </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
-    <DebugType>none</DebugType>
-    <OutputPath>bin\</OutputPath>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="$(DefineConstants.Contains('CIBuild')) OR '$(NCrunch)' == '1'">
-    <DisableCopyToPlugins>True</DisableCopyToPlugins>
-  </PropertyGroup>
-
-  <PropertyGroup Condition="'$(NCrunch)' == '1'">
-    <DisableCopyToPlugins>True</DisableCopyToPlugins>
-    <DisableZipRelease>True</DisableZipRelease>
-  </PropertyGroup>
-
   <ItemGroup>
-    <Compile Remove="Util\MultithreadedBeatsaverDownloader.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="UI\CustomLists\DownloadListCell.bsml" />
-    <None Remove="UI\CustomLists\SongListCell.bsml" />
-    <None Remove="UI\Views\SplitViews\GenrePicker.bsml" />
-    <None Remove="UI\Views\SplitViews\MultiDl.bsml" />
-    <None Remove="UI\Views\SplitViews\PlaylistCreation.bsml" />
-    <None Remove="UI\Views\SplitViews\Presets.bsml" />
-    <None Remove="UI\Views\DownloadHistory.bsml" />
-    <None Remove="UI\Views\FilterView.bsml" />
-    <None Remove="UI\Views\SongList.bsml" />
-    <None Remove="UI\Views\SplitViews\Settings.bsml" />
-    <None Remove="UI\Views\SplitViews\UploadDetails.bsml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="UI\Views\SplitViews\MultiDl.bsml" />
-    <EmbeddedResource Include="UI\Views\SplitViews\PlaylistCreation.bsml" />
-    <EmbeddedResource Include="UI\Views\SplitViews\GenrePicker.bsml" />
-    <EmbeddedResource Include="UI\Views\SplitViews\Presets.bsml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="UI\CustomLists\DownloadListCell.bsml" />
-    <EmbeddedResource Include="UI\CustomLists\SongListCell.bsml" />
-    <EmbeddedResource Include="UI\Views\SplitViews\Settings.bsml" />
-    <EmbeddedResource Include="UI\Views\SplitViews\UploadDetails.bsml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="0Harmony">
-      <HintPath>$(BeatSaberDir)\Libs\0Harmony.dll</HintPath>
+    <ProjectReference Include="vendor\BeatSage\scripts\shared_song_import\SongPackageIO.csproj" Condition="'$(SongPackageIOPath)' == ''"
+                      AdditionalProperties="RepoRoot=$(MSBuildProjectDirectory);BaseIntermediateOutputPath=$(MSBuildProjectDirectory)/.tmp/shared-obj/;OutputPath=$(MSBuildProjectDirectory)/.tmp/shared/">
+      <ReferenceOutputAssembly>true</ReferenceOutputAssembly>
+      <Private>false</Private>
+    </ProjectReference>
+    <Reference Include="SongPackageIO" Condition="'$(SongPackageIOPath)' != ''">
+      <HintPath>$(SongPackageIOPath)</HintPath>
+      <Private>false</Private>
     </Reference>
-    <Reference Include="BeatmapCore">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\BeatmapCore.dll</HintPath>
+    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.2" PrivateAssets="all" />
+    <Reference Include="$(GameRoot)/Beat Saber_Data/Managed/Main.dll;$(GameRoot)/Beat Saber_Data/Managed/DataModels.dll;$(GameRoot)/Beat Saber_Data/Managed/BeatmapCore.dll;$(GameRoot)/Beat Saber_Data/Managed/BeatSaber.ViewSystem.dll;$(GameRoot)/Beat Saber_Data/Managed/BGLib.AppFlow.dll;$(GameRoot)/Beat Saber_Data/Managed/BGLib.UnityExtension.dll;$(GameRoot)/Beat Saber_Data/Managed/IPA.Loader.dll;$(GameRoot)/Beat Saber_Data/Managed/SegmentedControl.dll;$(GameRoot)/Beat Saber_Data/Managed/Zenject.dll;$(GameRoot)/Beat Saber_Data/Managed/VRUI.dll;$(GameRoot)/Beat Saber_Data/Managed/VRUI.Interfaces.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.CoreModule.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.UI.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.AudioModule.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.TextRenderingModule.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.ImageConversionModule.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.UnityWebRequestModule.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.UnityWebRequestAudioModule.dll;$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.UnityWebRequestTextureModule.dll;$(GameRoot)/Beat Saber_Data/Managed/Unity.TextMeshPro.dll;$(GameRoot)/Beat Saber_Data/Managed/netstandard.dll">
+      <Private>false</Private>
+      <Publicize Condition="'%(Filename)' == 'Main' Or '%(Filename)' == 'BeatSaber.ViewSystem'">true</Publicize>
     </Reference>
-    <Reference Include="BeatSaber.ViewSystem" Publicize="true">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\BeatSaber.ViewSystem.dll</HintPath>
-    </Reference>
-    <Reference Include="BeatSaberPlaylistsLib">
-      <HintPath>$(BeatSaberDir)\Libs\BeatSaberPlaylistsLib.dll</HintPath>
-    </Reference>
-    <Reference Include="BGLib.AppFlow">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\BGLib.AppFlow.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="BGLib.UnityExtension">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\BGLib.UnityExtension.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
-    <Reference Include="BSML">
-      <HintPath>$(BeatSaberDir)\Plugins\BSML.dll</HintPath>
-    </Reference>
-    <Reference Include="DataModels">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\DataModels.dll</HintPath>
-    </Reference>
-    <Reference Include="HMLib">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\HMLib.dll</HintPath>
-    </Reference>
-    <Reference Include="HMUI" Publicize="true">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\HMUI.dll</HintPath>
-    </Reference>
-    <Reference Include="Interactable">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Interactable.dll</HintPath>
-    </Reference>
-    <Reference Include="IPA.Loader">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\IPA.Loader.dll</HintPath>
-    </Reference>
-    <Reference Include="Main" Publicize="true">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Main.dll</HintPath>
-    </Reference>
-    <Reference Include="Microsoft.CSharp"></Reference>
-    <Reference Include="Newtonsoft.Json">
-      <HintPath>$(BeatSaberDir)\Libs\Newtonsoft.Json.dll</HintPath>
-    </Reference>
-    <Reference Include="protobuf-net">
-      <HintPath>$(BeatSaberDir)\Libs\protobuf-net.dll</HintPath>
-    </Reference>
-    <Reference Include="SegmentedControl">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\SegmentedControl.dll</HintPath>
-    </Reference>
-    <Reference Include="SongCore">
-      <HintPath>$(BeatSaberDir)\Plugins\SongCore.dll</HintPath>
-    </Reference>
-    <Reference Include="SongDetailsCache">
-      <HintPath>$(BeatSaberDir)\Libs\SongDetailsCache.dll</HintPath>
-    </Reference>
-    <Reference Include="System"></Reference>
-    <Reference Include="System.Core"></Reference>
-    <Reference Include="System.Data"></Reference>
-    <Reference Include="System.Data.DataSetExtensions"></Reference>
-    <Reference Include="System.IO.Compression" />
-    <Reference Include="Unity.TextMeshPro">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\Unity.TextMeshPro.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.AudioModule">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.AudioModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.CoreModule">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.CoreModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UI">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UI.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UIModule">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UIModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestAudioModule">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UnityWebRequestAudioModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestModule">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UnityWebRequestModule.dll</HintPath>
-    </Reference>
-    <Reference Include="UnityEngine.UnityWebRequestTextureModule">
-      <HintPath>$(BeatSaberDir)\Beat Saber_Data\Managed\UnityEngine.UnityWebRequestTextureModule.dll</HintPath>
-    </Reference>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Include="manifest.json" />
-    <EmbeddedResource Include="UI\Views\DownloadHistory.bsml" />
-    <EmbeddedResource Include="UI\Views\FilterView.bsml" />
-    <EmbeddedResource Include="UI\Views\SongList.bsml" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Include="Util\MultithreadedBeatsaverDownloader.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="BeatSaberModdingTools.Tasks" Version="1.4.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.1">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
+    <Reference Include="$(GameRoot)/Beat Saber_Data/Managed/HMUI.dll"><Private>false</Private><Publicize>true</Publicize></Reference>
+    <Reference Include="$(GameRoot)/Beat Saber_Data/Managed/HMLib.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameRoot)/Beat Saber_Data/Managed/UnityEngine.TextCoreFontEngineModule.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameRoot)/Libs/protobuf-net.dll;$(GameRoot)/Libs/System.IO.Compression.dll;$(GameRoot)/Libs/System.IO.Compression.FileSystem.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameRoot)/Libs/0Harmony.dll;$(GameRoot)/Libs/Newtonsoft.Json.dll;$(GameRoot)/Libs/SongDetailsCache.dll"><Private>false</Private></Reference>
+    <Reference Include="$(GameRoot)/Plugins/BSML.dll;$(GameRoot)/Plugins/SongCore.dll"><Private>false</Private></Reference>
+    <EmbeddedResource Include="UI/**/*.bsml"><LogicalName>$([System.String]::Copy('BetterSongSearch.UI.%(RecursiveDir)%(Filename)%(Extension)').Replace('\','.').Replace('/','.'))</LogicalName></EmbeddedResource>
+    <EmbeddedResource Include="manifest.json"><LogicalName>BetterSongSearch.manifest.json</LogicalName></EmbeddedResource>
+    <Compile Remove="Tests/**;vendor/**;.tmp/**" />
+    <EmbeddedResource Remove="vendor/**;.tmp/**" />
+    <None Remove="vendor/**;.tmp/**" />
   </ItemGroup>
 </Project>
