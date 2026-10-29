@@ -1,19 +1,14 @@
-﻿<vertical id='bgContainer' bg='round-rect-panel' pad='1' pad-bottom='2' horizontal-fit='Unconstrained' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='https://monkeymanboy.github.io/BSML-Docs/ https://raw.githubusercontent.com/monkeymanboy/BSML-Docs/gh-pages/BSMLSchema.xsd'>
-	<horizontal spacing='3'>
-		<text id='fullFormattedSongName' align='MidlineLeft' overflow-mode='Ellipsis' word-wrapping='false' rich-text='false'/>
-		<text id='uploadDateFormatted' align='MidlineRight' word-wrapping='false' color='#AAA' rich-text='false'/>
-	</horizontal>
-	<horizontal pad-top='1' pad-bottom='2' spacing='2'>
-		<text id='levelAuthorName' align='MidlineLeft' overflow-mode='Ellipsis' word-wrapping='false' color='#CCC' rich-text='false'/>
-		<text id='songLengthAndRating' align='MidlineRight' font-color='#CCC' word-wrapping='false'/>
-	</horizontal>
-	<horizontal id='diffs' bg='round-rect-panel' bg-color='#000D'>
-		<text align='Center' overflow-mode='Truncate'/>
-		<text align='Center' overflow-mode='Truncate'/>
-		<text align='Center' overflow-mode='Truncate'/>
-		<text align='Center' overflow-mode='Truncate'/>
-		<text align='Center' overflow-mode='Truncate'/>
-		<text align='Center' overflow-mode='Truncate'/>
-		<text align='Center' overflow-mode='Truncate'/>
-	</horizontal>
-</vertical>
+<horizontal id='bgContainer' bg='round-rect-panel' bg-color='#111A24D8' preferred-height='12.5' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' pad='0' spacing='2' child-expand-height='false'>
+  <image id='cover' preferred-width='9' preferred-height='9' preserve-aspect='true'/>
+  <vertical preferred-width='93' min-width='93' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' spacing='0' child-expand-height='false'>
+    <horizontal preferred-height='4.5' spacing='2'>
+      <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='songName' font-size='3.2' bold='true' align='MidlineLeft' overflow-mode='Ellipsis' word-wrapping='false' rich-text='false'/>
+      <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='songState' font-size='2.4' preferred-width='18' align='MidlineRight' overflow-mode='Ellipsis' word-wrapping='false' rich-text='false' color='#8FD4E8'/>
+    </horizontal>
+    <horizontal preferred-height='3.5' spacing='2'>
+      <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='songAuthorName' font-size='2.4' align='MidlineLeft' overflow-mode='Ellipsis' word-wrapping='false' rich-text='false' color='#AAB8C3'/>
+      <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='songStats' font-size='2.4' preferred-width='20' align='MidlineRight' word-wrapping='false' rich-text='false' color='#CCD6DF'/>
+    </horizontal>
+    <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='songSummary' font-size='2.4' preferred-height='3.5' align='MidlineLeft' overflow-mode='Ellipsis' word-wrapping='false' rich-text='true' color='#CCD6DF'/>
+  </vertical>
+</horizontal>

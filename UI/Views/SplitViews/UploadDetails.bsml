@@ -1,29 +1,12 @@
-﻿<modal clickerino-offerino-closerino='true' show-event='ShowModal' hide-event='CloseModal' size-delta-x='90' size-delta-y='75' xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='- https://raw.githubusercontent.com/monkeymanboy/BSML-Docs/gh-pages/BSMLSchema.xsd'>
-	<vertical horizontal-fit='Unconstrained' pad='4' pad-top='9'>
-		<horizontal bg='panel-top-gradient' ignore-layout='true' anchor-max-x='.97' anchor-min-x='.03' anchor-min-y='1' anchor-pos-y='-5'>
-			<text text='BetterSongSearch - Upload Details' align='Center'/>
-		</horizontal>
-		<horizontal vertical-fit='Unconstrained' horizontal-fit='Unconstrained'>
-			<vertical child-expand-height='false' preferred-width="25">
-				<text text="Song Key" align="Center" color='#7CF'/>
-				<vertical>
-					<text id="selectedSongKey" align="Center" all-uppercase='true'/>
-					<text text="BeatSaver Rating" align="Center" color='#7CF'/>
-					<text id="selectedRating" align="Center"/>
-					<!--<text text="Downloads" align="Center" color='#7CF'/>
-					<text id="selectedDownloadCount" align="Center"/>-->
-					<text text="Characteristics" align="Center" color='#7CF'/>
-					<text id="selectedCharacteristics" align="Center" font-size='3.3' word-wrapping='true'/>
-				</vertical>
-			</vertical>
-			<vertical child-expand-height="false" pad-left="6">
-				<text text="Description" align="Center" color='#7CF'/>
-				<loading id="songDetailsLoading" preserve-aspect="true" preferred-height="20"/>
-				<vertical horizontal-fit='PreferredSize' preferred-width="60">
-					<text-page id="selectedSongDescription" align="Center" word-wrapping="true"/>
-				</vertical>
-			</vertical>
-		</horizontal>
-		<button event-click='CloseModal' text='Close Details'/>
-	</vertical>
+<modal show-event='ShowModal' hide-event='CloseModal' size-delta-x='95' size-delta-y='72'>
+  <vertical pad='4' spacing='2' child-expand-height='false'>
+    <text id='songName' font-size='3.2' preferred-height='9' word-wrapping='true' rich-text='false' overflow-mode='Ellipsis'/>
+    <loading id='songDetailsLoading' preferred-height='5' preserve-aspect='true'/>
+    <scroll-view id='descriptionScroll' preferred-width='87' preferred-height='35'>
+      <vertical pad-left='4' pad-right='2' horizontal-fit='Unconstrained' vertical-fit='PreferredSize' child-control-height='true' child-expand-height='false' child-expand-width='false'>
+        <text id='selectedSongDescription' preferred-width='75' min-width='75' font-size='2.6' word-wrapping='true' rich-text='false' align='TopLeft' horizontal-fit='Unconstrained' vertical-fit='PreferredSize'/>
+      </vertical>
+    </scroll-view>
+    <horizontal spacing='2' preferred-height='7'><button text='Retry' on-click='RetryDescription' font-size='2.6'/><button text='Close' click-event='CloseModal' font-size='2.6'/></horizontal>
+  </vertical>
 </modal>

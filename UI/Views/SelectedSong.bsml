@@ -1,0 +1,79 @@
+<vertical preferred-width='154' pad='2' spacing='1' child-control-height='true' child-expand-height='false' horizontal-fit='Unconstrained' vertical-fit='Unconstrained'>
+  <horizontal preferred-height='7' spacing='2'>
+    <button text='Song Details' on-click='ShowDetails' font-size='2.6' preferred-width='28'/>
+    <button text='Downloads' on-click='ShowQueue' font-size='2.6' preferred-width='24'/>
+    <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='queueSummary' align='MidlineRight' font-size='2.4' color='#AAB8C3' overflow-mode='Ellipsis' word-wrapping='false'/>
+  </horizontal>
+  <vertical id='emptyState' preferred-height='76' child-align='MiddleCenter'>
+    <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' text='Select a song' align='Center' font-size='3.2' color='#AAB8C3'/>
+  </vertical>
+  <vertical id='detailArea' preferred-height='76' active='false' bg='round-rect-panel' bg-color='#101B2AF2' pad='2' spacing='0.5' child-control-height='true' child-expand-height='false' horizontal-fit='Unconstrained' vertical-fit='Unconstrained'>
+    <macro.as-host host='selectedSongView'>
+      <horizontal child-control-height='true' child-expand-height='false' preferred-height='34' spacing='4' child-expand-width='false' child-align='MiddleLeft'>
+        <image id='coverImage' preferred-width='32' min-width='32' preferred-height='32' preserve-aspect='true'/>
+        <vertical preferred-width='116' min-width='116' horizontal-fit='Unconstrained' spacing='0.5' child-control-height='true' child-expand-height='false'>
+          <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='selectedSongName' font-size='4.6' bold='true' preferred-height='13' align='TopLeft' overflow-mode='Ellipsis' word-wrapping='true' rich-text='false'/>
+          <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='selectedSongAuthor' font-size='3' preferred-height='4.5' overflow-mode='Ellipsis' word-wrapping='false' rich-text='false' color='#CCD6DF'/>
+          <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='selectedMapperName' font-size='2.8' preferred-height='4.5' overflow-mode='Ellipsis' word-wrapping='false' rich-text='false' color='#AAB8C3'/>
+          <horizontal child-control-height='true' child-expand-height='false' preferred-height='10' spacing='2' child-expand-width='false'>
+            <vertical preferred-width='27.5' min-width='27.5' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false' horizontal-fit='Unconstrained' vertical-fit='Unconstrained'>
+              <text text='Duration' font-size='2.7' preferred-height='3.6' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+              <text id='songDuration' font-size='3.6' preferred-height='4.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+            </vertical>
+            <vertical preferred-width='27.5' min-width='27.5' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false' horizontal-fit='Unconstrained' vertical-fit='Unconstrained'>
+              <text text='Tempo' font-size='2.7' preferred-height='3.6' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+              <text id='songBpm' font-size='3.6' preferred-height='4.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+            </vertical>
+            <vertical preferred-width='27.5' min-width='27.5' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false' horizontal-fit='Unconstrained' vertical-fit='Unconstrained'>
+              <text text='Rating' font-size='2.7' preferred-height='3.6' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+              <text id='songRating' font-size='3.6' preferred-height='4.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+            </vertical>
+            <vertical preferred-width='27.5' min-width='27.5' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false' horizontal-fit='Unconstrained' vertical-fit='Unconstrained'>
+              <text text='Vote count' font-size='2.7' preferred-height='3.6' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+              <text id='songVotes' font-size='3.6' preferred-height='4.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+            </vertical>
+          </horizontal>
+        </vertical>
+      </horizontal>
+      <horizontal preferred-height='8' spacing='2'>
+        <dropdown-list-setting id='modeDropdown' min-width='70' preferred-width='70' text='Mode' value='selectedMode' choices='modeChoices' bind-value='true' apply-on-change='true' on-change='ModeChanged'/>
+        <dropdown-list-setting id='difficultyDropdown' min-width='70' preferred-width='70' text='Difficulty' value='selectedDifficulty' choices='difficultyChoices' bind-value='true' apply-on-change='true' on-change='DifficultyChanged'/>
+      </horizontal>
+      <horizontal child-control-height='true' child-expand-height='false' preferred-height='12' spacing='1' child-expand-width='false' horizontal-fit='Unconstrained'>
+        <vertical preferred-width='24.5' min-width='24.5' preferred-height='12' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false'>
+          <text text='Note density' font-size='2.8' preferred-height='3.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+          <text id='songDiffMetrics' font-size='3.8' preferred-height='5.5' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+        </vertical>
+        <vertical preferred-width='24.5' min-width='24.5' preferred-height='12' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false'>
+          <text text='Note count' font-size='2.8' preferred-height='3.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+          <text id='noteCount' font-size='3.8' preferred-height='5.5' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+        </vertical>
+        <vertical preferred-width='24.5' min-width='24.5' preferred-height='12' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false'>
+          <text text='Obstacles' font-size='2.8' preferred-height='3.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+          <text id='obstacleCount' font-size='3.8' preferred-height='5.5' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+        </vertical>
+        <vertical preferred-width='24.5' min-width='24.5' preferred-height='12' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false'>
+          <text text='Bombs' font-size='2.8' preferred-height='3.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+          <text id='bombCount' font-size='3.8' preferred-height='5.5' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+        </vertical>
+        <vertical preferred-width='24.5' min-width='24.5' preferred-height='12' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false'>
+          <text text='Note speed' font-size='2.8' preferred-height='3.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+          <text id='songDiffMotion' font-size='3.8' preferred-height='5.5' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+        </vertical>
+        <vertical preferred-width='24.5' min-width='24.5' preferred-height='12' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' bg='round-rect-panel' bg-color='#203246C8' pad='1' child-control-height='true' child-expand-height='false'>
+          <text text='Stars' font-size='2.8' preferred-height='3.8' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' color='#AAB8C3'/>
+          <text id='starValue' font-size='3.8' preferred-height='5.5' horizontal-fit='Unconstrained' vertical-fit='Unconstrained' align='Center' rich-text='false'/>
+        </vertical>
+      </horizontal>
+      <horizontal preferred-height='0' min-height='0' flexible-height='1'/>
+      <text horizontal-fit='Unconstrained' vertical-fit='Unconstrained' id='songActionStatus' preferred-height='6' font-size='2.8' word-wrapping='false' rich-text='false' color='#AAB8C3'/>
+      <horizontal child-control-height='true' child-expand-height='false' preferred-height='8' spacing='2' child-expand-width='false' child-align='MiddleCenter'>
+        <primary-button id='downloadButton' text='Download' on-click='Download' font-size='3' preferred-width='28'/>
+        <primary-button id='playButton' text='Play' on-click='Play' font-size='3' preferred-width='28'/>
+        <button text='More Details' on-click='ShowSongDetails' font-size='3' preferred-width='36'/>
+        <button text='Same Uploader' on-click='FilterByUploader' font-size='3' preferred-width='36'/>
+      </horizontal>
+    </macro.as-host>
+  </vertical>
+  <vertical id='queueArea' active='true' preferred-height='76'/>
+</vertical>

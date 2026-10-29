@@ -1,4 +1,4 @@
-﻿using BeatSaberMarkupLanguage.Attributes;
+using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components.Settings;
 
 namespace BetterSongSearch.UI.SplitViews {
@@ -9,7 +9,7 @@ namespace BetterSongSearch.UI.SplitViews {
 		[UIComponent("multiDlCountSlider")] readonly SliderSetting multiDlCountSlider = null;
 		[UIAction("StartMultiDownload")]
 		void StartMultiDownload() {
-			for(int i = BSSFlowCoordinator.songListView.songList.GetVisibleCellsIdRange().Item1, downloaded = 0; i < SongListController.searchedSongsList.Count; i++) {
+			for(int i = BSSFlowCoordinator.songListView.FirstVisibleRow, downloaded = 0; i < SongListController.searchedSongsList.Count; i++) {
 				if(SongListController.searchedSongsList[i].CheckIsDownloaded() || !SongListController.searchedSongsList[i].CheckIsDownloadable())
 					continue;
 
@@ -21,6 +21,7 @@ namespace BetterSongSearch.UI.SplitViews {
 			}
 
 			BSSFlowCoordinator.downloadHistoryView.RefreshTable(true);
+			BSSFlowCoordinator.downloadHistoryView.ProcessDownloads(true);
 		}
 	}
 }

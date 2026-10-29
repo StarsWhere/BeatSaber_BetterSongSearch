@@ -1,4 +1,4 @@
-﻿using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage;
 using BeatSaberMarkupLanguage.Attributes;
 using BeatSaberMarkupLanguage.Components;
 using BeatSaberMarkupLanguage.Components.Settings;
@@ -20,6 +20,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace BetterSongSearch.UI {
 
@@ -39,69 +40,55 @@ namespace BetterSongSearch.UI {
 
 		public static readonly FilterOptions currentFilter = new FilterOptions();
 
-		[UIComponent("filterbarContainer")] Transform filterbarContainer = null;
-		//[UIComponent("modsRequirementDropdown")] DropdownWithTableView _modsRequirementDropdown = null;
-
-		IEnumerator FixupScrollpanel() {
-			yield return null;
-
-			var beatsaverFilterScroller = gameObject.GetComponentInChildren<BSMLScrollView>().transform;
-
-			((RectTransform)beatsaverFilterScroller.Find("Viewport").transform).sizeDelta = new Vector2(-5.5f, -5);
-
-			foreach(var input in
-				beatsaverFilterScroller.Find("Viewport/BSMLScrollViewContent/BSMLScrollViewContentContainer/BSMLVerticalLayoutGroup")
-				.GetComponentsInChildren<Touchable>()
-			) {
-				RectTransform t = (RectTransform)input.transform;
-
-				if(input.name == "IncButton" || input.name == "DropDownButton") {
-					t = (RectTransform)t.parent;
-					t.Find("DecButton")?.gameObject.SetActive(false);
-				}
-
-				if(t.sizeDelta.x > 30)
-					t.sizeDelta = new Vector2(30, 0);
-			}
-		}
-
-		[UIAction("#post-parse")]
-		void Parsed() {
-			currentFilter.hideOlderThanSlider.Slider.maxValue = hideOlderThanOptions.Count - 1;
-
-			((RectTransform)gameObject.transform).offsetMax = new Vector2(20, 22);
-
-			StartCoroutine(BSMLStuff.MergeSliders(gameObject));
-			StartCoroutine(FixupScrollpanel());
-
-			//// I hate BSML some times
-			var m = GetComponentsInChildren<DropDownListSetting>()
-				.Where(x => x.AssociatedValue.MemberName == "mods")
-				.First()
-				.GetComponent<DropdownWithTableView>()
-				._modalView;
-
-			foreach(var l in GetComponentsInChildren<CurvedTextMeshPro>().Where(x => x.gameObject.name == "Title"))
-				l.enableWordWrapping = false;
-				
-
-			((RectTransform)m.transform).pivot = new Vector2(0.5f, 0.3f);
-
-			// This is garbage
-			foreach(var x in GetComponentsInChildren<Backgroundable>().Select(x => x.GetComponent<ImageView>())) {
-				if(!x || x.color0 != Color.white || x.sprite.name != "RoundRect10")
-					continue;
-
-				x._skew = 0;
-				x.overrideSprite = null;
-				x.SetImageAsync("#RoundRect10BorderFade");
-				x.color = new Color(0, 0.7f, 1f, 0.4f);
-			}
-
-			foreach(var x in filterbarContainer.GetComponentsInChildren<ImageView>().Where(x => x.gameObject.name == "Underline"))
-				x.SetImageAsync("#RoundRect10BorderFade");
-		}
-
+        [UIComponent("starsGroup")] Transform starsGroup;
+        [UIComponent("mappingGroup")] Transform mappingGroup;
+        [UIComponent("ratingGroup")] Transform ratingGroup;
+        [UIComponent("uploaderGroup")] Transform uploaderGroup;
+        [UIComponent("genreGroup")] Transform genreGroup;
+        [UIComponent("modsGroup")] Transform modsGroup;
+        [UIComponent("commonFilters")] Transform commonFilters;
+        [UIComponent("advancedFilters")] Transform advancedFilters;
+        [UIValue("starsLabel")] string starsLabel => GroupLabel("Stars and Ranking", starsGroup, (currentFilter.rankedState != "Show all" ? 1 : 0) + (currentFilter.minimumStars > 0 ? 1 : 0) + (currentFilter.maximumStars < float.MaxValue ? 1 : 0));
+        [UIValue("mappingLabel")] string mappingLabel => GroupLabel("Mapping and Length", mappingGroup, (currentFilter.minimumNps > 0 ? 1 : 0) + (currentFilter.maximumNps < float.MaxValue ? 1 : 0) + (currentFilter.minimumNjs > 0 ? 1 : 0) + (currentFilter.maximumNjs < float.MaxValue ? 1 : 0) + (currentFilter.minimumSongLength > 0 ? 1 : 0) + (currentFilter.maximumSongLength < float.MaxValue ? 1 : 0));
+        [UIValue("ratingLabel")] string ratingLabel => GroupLabel("Rating and Date", ratingGroup, (currentFilter.minimumRating > 0 ? 1 : 0) + (currentFilter.minimumVotes > 0 ? 1 : 0) + (currentFilter.onlyCuratedMaps ? 1 : 0) + (currentFilter.onlyVerifiedMappers ? 1 : 0) + (currentFilter._hideOlderThan > 0 ? 1 : 0));
+        [UIValue("uploaderLabel")] string uploaderLabel => GroupLabel("Uploaders", uploaderGroup, currentFilter.uploaders.Count > 0 ? 1 : 0);
+        [UIValue("genreLabel")] string genreLabel => GroupLabel("Style and Genre", genreGroup, (String.IsNullOrEmpty(currentFilter.mapStyleString) || currentFilter.mapStyleString == "Any" ? 0 : 1) + (String.IsNullOrEmpty(currentFilter.mapGenreString) ? 0 : 1) + (String.IsNullOrEmpty(currentFilter.mapGenreExcludeString) ? 0 : 1));
+        [UIValue("modsLabel")] string modsLabel => GroupLabel("Mods", modsGroup, currentFilter.mods != "Any" ? 1 : 0);
+        static string GroupLabel(string name, Transform group, int count) => (group != null && group.gameObject.activeSelf ? "- " : "+ ") + BssText.T(name) + (count == 0 ? "" : " (" + count + ")");
+        void Toggle(Transform group) { group.gameObject.SetActive(!group.gameObject.activeSelf); RefreshGroupLabels(); StartCoroutine(FinalizeLayout()); }
+        [UIAction("ToggleStars")] void ToggleStars() => Toggle(starsGroup);
+        [UIAction("ToggleMapping")] void ToggleMapping() => Toggle(mappingGroup);
+        [UIAction("ToggleRating")] void ToggleRating() => Toggle(ratingGroup);
+        [UIAction("ToggleUploaders")] void ToggleUploaders() => Toggle(uploaderGroup);
+        [UIAction("ToggleGenre")] void ToggleGenre() => Toggle(genreGroup);
+        [UIAction("ToggleMods")] void ToggleMods() => Toggle(modsGroup);
+        internal void RefreshGroupLabels() {
+            foreach(string name in new[] {"starsLabel","mappingLabel","ratingLabel","uploaderLabel","genreLabel","modsLabel"}) NotifyPropertyChanged(name);
+        }
+        [UIAction("#post-parse")] void Parsed() {
+            currentFilter.hideOlderThanSlider.Slider.maxValue = hideOlderThanOptions.Count - 1;
+            BSMLStuff.InitializeScrollViews(gameObject);
+            BssUi.Settings(gameObject,104);
+            StartCoroutine(FinalizeLayout());
+            foreach(var text in GetComponentsInChildren<TMP_Text>(true)) if(text.name == "Title" || text.fontSize > 3.3f) text.fontSize = 2.6f;
+        }
+        IEnumerator FinalizeLayout() {
+            yield return null; BssUi.Settings(gameObject,104);
+            foreach(var setting in commonFilters.GetComponentsInChildren<DropDownListSetting>(true)) BssUi.Setting(setting,48,16);
+            foreach(var button in advancedFilters.GetComponentsInChildren<Button>(true)) BssUi.Button(button,48,8);
+            StyleAdvancedSliderLabels();
+        }
+        void StyleAdvancedSliderLabels() {
+            foreach(var group in new[] {starsGroup, mappingGroup, ratingGroup, uploaderGroup, genreGroup, modsGroup}) {
+                if(group == null)
+                    continue;
+                foreach(var title in group.GetComponentsInChildren<TMP_Text>(true).Where(text => text.name == "Title")) {
+                    title.enableAutoSizing = false;
+                    title.fontSize = 2.6f;
+                    title.alignment = TextAlignmentOptions.MidlineLeft;
+                }
+            }
+        }
 		internal void ClearFilters() => SetFilter();
 
 		internal void SetFilter(FilterOptions filter = null) {
@@ -113,16 +100,9 @@ namespace BetterSongSearch.UI {
 				x.SetValue(currentFilter, x.GetValue(filter));
 			}
 
-			SetGenreFilter(null, null);
+			
 			currentFilter.NotifyPropertiesChanged();
-			/*
-			 * This is a massive hack and I have NO IDEA why I need to do this. If I dont do this, or
-			 * the FilterSongs() method NEVER ends up being called, not even if I manually invoke
-			 * limitedUpdateData.Call[NextFrame]() OR EVEN BSSFlowCoordinator.FilterSongs() DIRECTLY
-			 * Seems like there is SOMETHING broken with how input changes are handled, something to do
-			 * with nested coroutines or whatever. I have no idea. For now I spent enough time trying to fix this
-			 */
-			currentFilter.hideOlderThanSlider.OnChange.Invoke(currentFilter.hideOlderThanSlider.Value);
+            RefreshGroupLabels(); BSSFlowCoordinator.FilterSongs();
 		}
 
 		BSMLParserParams presetsViewParams = null;
@@ -157,26 +137,27 @@ namespace BetterSongSearch.UI {
 
 
 		#region filters
-		static bool requiresScore => (currentFilter.existingScore == (string)FilterOptions.scoreFilterOptions[2]) || SongListController.selectedSortMode == "Worst local score";
+		
 
 		static readonly IReadOnlyDictionary<object, MapMods> funnyMapThing = Enumerable.Range(0, 4)
 			.ToDictionary(x => FilterOptions.modOptions[x + 1], x => (MapMods)(1 << x));
+        internal static string FormatMods(MapMods mods) => mods == 0 ? BssText.T("No required mods") : String.Join(" · ",funnyMapThing.Where(x => (mods & x.Value) != 0).Select(x => BssText.T((string)x.Key)));
 
 		static readonly IReadOnlyDictionary<string, RankedStates> funnyMapThing2 = Enumerable.Range(0, 4)
 			.ToDictionary(x => (string)FilterOptions.rankedFilterOptions[x + 1], x => (RankedStates)(1 << x));
 
-		public bool DifficultyCheck(in SongDifficulty diff) {
-			if(currentFilter.difficulty_int != -1 && currentFilter.difficulty_int != (int)diff.difficulty)
+		public bool DifficultyCheck(in SongDifficulty diff, FilterOptions filter = null) { filter ??= currentFilter;
+			if(filter.difficulty_int != -1 && filter.difficulty_int != (int)diff.difficulty)
 				return false;
 
-			if(currentFilter.characteristic_int != -1 && currentFilter.characteristic_int != (int)diff.characteristic)
+			if(filter.characteristic_int != -1 && filter.characteristic_int != (int)diff.characteristic)
 				return false;
 
-			if(diff.njs < currentFilter.minimumNjs || diff.njs > currentFilter.maximumNjs)
+			if(diff.njs < filter.minimumNjs || diff.njs > filter.maximumNjs)
 				return false;
 
-			if(currentFilter.rankedState != (string)FilterOptions.rankedFilterOptions[0]) {
-				var state = funnyMapThing2[currentFilter.rankedState];
+			if(filter.rankedState != (string)FilterOptions.rankedFilterOptions[0]) {
+				var state = funnyMapThing2[filter.rankedState];
 
 				if(state == RankedStates.ScoresaberRanked && diff.stars == 0)
 					return false;
@@ -185,107 +166,109 @@ namespace BetterSongSearch.UI {
 					return false;
 			}
 
-			if(currentFilter.mods != (string)FilterOptions.modOptions[0]) {
-				if((diff.mods & funnyMapThing[currentFilter.mods]) == 0)
+			if(filter.mods != (string)FilterOptions.modOptions[0]) {
+				if((diff.mods & funnyMapThing[filter.mods]) == 0)
 					return false;
 			}
 
+			if(diff.song.songDurationSeconds == 0 && (filter.minimumNps > 0 || filter.maximumNps < float.MaxValue)) return false;
 			if(diff.song.songDurationSeconds > 0) {
 				var nps = diff.notes / (float)diff.song.songDurationSeconds;
 
-				if(nps < currentFilter.minimumNps || nps > currentFilter.maximumNps)
+				if(nps < filter.minimumNps || nps > filter.maximumNps)
 					return false;
 			}
 
 			return true;
 		}
 
-		public bool SearchDifficultyCheck(SongSearchSong.SongSearchDiff diff) {
-			if(currentFilter.existingScore != (string)FilterOptions.scoreFilterOptions[0] || requiresScore) {
+		public bool SearchDifficultyCheck(SongSearchSong.SongSearchDiff diff, FilterOptions filter = null) { filter ??= currentFilter; bool requiresScore = filter.existingScore == (string)FilterOptions.scoreFilterOptions[2];
+			if(filter.existingScore != (string)FilterOptions.scoreFilterOptions[0] || requiresScore) {
 				if(diff.CheckHasScore() != requiresScore)
 					return false;
 			}
 
 			var star = -1f;
 
-			if(currentFilter.maximumStars != FilterOptions.STAR_FILTER_MAX) {
-				star = diff.GetStars();
+			if(filter.maximumStars != FilterOptions.STAR_FILTER_MAX) {
+				star = diff.GetStars(filter);
 
-				if(star > currentFilter.maximumStars)
+				if(star > filter.maximumStars)
 					return false;
 			}
 
-			if(currentFilter.minimumStars != 0f) {
+			if(filter.minimumStars != 0f) {
 				if(star == -1)
-					star = diff.GetStars();
+					star = diff.GetStars(filter);
 
-				if(star < currentFilter.minimumStars)
+				if(star < filter.minimumStars)
 					return false;
 			}
 
 			return true;
 		}
 
-		public bool SongCheck(in Song song) {
-			if(song.uploadTime < currentFilter.hideOlderThan)
+		public bool SongCheck(in Song song, FilterOptions filter = null) { filter ??= currentFilter;
+			if(song.uploadTime < filter.hideOlderThan)
 				return false;
 
-			if(currentFilter.rankedState != (string)FilterOptions.rankedFilterOptions[0]) {
-				if(!song.rankedStates.HasFlag(funnyMapThing2[currentFilter.rankedState]))
+			if(filter.rankedState != (string)FilterOptions.rankedFilterOptions[0]) {
+				if(!song.rankedStates.HasFlag(funnyMapThing2[filter.rankedState]))
 					return false;
 			}
 
 			const float oneSixtythInverse = 1f / 60;
 
+			if(song.songDurationSeconds == 0 && (filter.minimumSongLength > 0 || filter.maximumSongLength < float.MaxValue)) return false;
 			if(song.songDurationSeconds > 0f) {
 				var x = song.songDurationSeconds * oneSixtythInverse;
 
-				if(x < currentFilter.minimumSongLength || x > currentFilter.maximumSongLength)
+				if(x < filter.minimumSongLength || x > filter.maximumSongLength)
 					return false;
 			}
 
 			var voteCount = song.downvotes + song.upvotes;
 
-			if(voteCount < currentFilter.minimumVotes)
+			if(voteCount < filter.minimumVotes)
 				return false;
 
-			if(currentFilter.minimumRating > 0f && (currentFilter.minimumRating > song.rating || voteCount == 0))
+			if(filter.minimumRating > 0f && (filter.minimumRating > song.rating || voteCount == 0))
 				return false;
 
-			if(currentFilter.onlyCuratedMaps && (song.uploadFlags & UploadFlags.Curated) == 0)
+			if(filter.onlyCuratedMaps && (song.uploadFlags & UploadFlags.Curated) == 0)
 				return false;
 
-			if(currentFilter.onlyVerifiedMappers && (song.uploadFlags & UploadFlags.VerifiedUploader) == 0)
+			if(filter.onlyVerifiedMappers && (song.uploadFlags & UploadFlags.VerifiedUploader) == 0)
 				return false;
 
-			if(currentFilter._mapStyleBitfield != 0 && (song.tags & currentFilter._mapStyleBitfield) == 0)
+			if(filter._mapStyleBitfield != 0 && (song.tags & filter._mapStyleBitfield) == 0)
 				return false;
 
-			if(currentFilter._mapGenreBitfield != 0 && (song.tags & currentFilter._mapGenreBitfield) == 0)
+			if(filter._mapGenreBitfield != 0 && (song.tags & filter._mapGenreBitfield) == 0)
 				return false;
 
-			if((song.tags & currentFilter._mapGenreExcludeBitfield) != 0)
+			if((song.tags & filter._mapGenreExcludeBitfield) != 0)
 				return false;
 
 			return true;
 		}
 
-		public bool SearchSongCheck(SongSearchSong song) {
-			if(currentFilter.existingSongs != (string)FilterOptions.downloadedFilterOptions[0]) {
-				if(SongCore.Collections.songWithHashPresent(song.hash) == (currentFilter.existingSongs == (string)FilterOptions.downloadedFilterOptions[2]))
+		public bool SearchSongCheck(SongSearchSong song, FilterOptions filter = null) { filter ??= currentFilter; bool requiresScore = filter.existingScore == (string)FilterOptions.scoreFilterOptions[2];
+			if(filter.existingSongs != (string)FilterOptions.downloadedFilterOptions[0]) {
+				if(SongCore.Collections.songWithHashPresent(song.hash) == (filter.existingSongs == (string)FilterOptions.downloadedFilterOptions[2]))
 					return false;
 			}
 
-			if(currentFilter.existingScore != (string)FilterOptions.scoreFilterOptions[0] || requiresScore) {
+			if(filter.existingScore != (string)FilterOptions.scoreFilterOptions[0] || requiresScore) {
 				if(song.CheckHasScore() != requiresScore)
 					return false;
 			}
 
-			if(currentFilter.uploaders.Count != 0) {
-				if(currentFilter.uploaders.Contains(song.uploaderNameLowercase)) {
-					if(currentFilter.uploadersBlacklist)
+			if(filter.uploaders.Count != 0) {
+				if(filter.uploaders.Contains(song.uploaderNameLowercase)) {
+					if(filter.uploadersBlacklist)
 						return false;
-				} else if(!currentFilter.uploadersBlacklist) {
+				} else if(!filter.uploadersBlacklist) {
 					return false;
 				}
 			}
@@ -295,27 +278,9 @@ namespace BetterSongSearch.UI {
 		#endregion
 
 
-		[UIComponent("sponsorsText")] CurvedTextMeshPro sponsorsText = null;
-		void OpenSponsorsLink() => Process.Start("https://github.com/sponsors/kinsi55");
-		async void OpenSponsorsModal() {
-			sponsorsText.text = "Loading...";
-			var desc = await Task.Run(() => {
-				try {
-					return (new WebClient()).DownloadString("http://kinsi.me/sponsors/bsout.php");
-				} catch { }
-				return "Failed to load";
-			});
-
-			sponsorsText.text = desc;
-			// There is almost certainly a better way to update / correctly set the scrollbar size...
-			sponsorsText.gameObject.SetActive(false);
-			sponsorsText.gameObject.SetActive(true);
-		}
-
-
 		public static readonly RatelimitCoroutine limitedUpdateData = new RatelimitCoroutine(BSSFlowCoordinator.FilterSongs, 0.1f);
 
-		readonly string version = $"BetterSongSearch v{Assembly.GetExecutingAssembly().GetName().Version.ToString(3)} by Kinsi55";
+		
 		[UIComponent("datasetInfoLabel")] private TextMeshProUGUI _datasetInfoLabel = null;
 		public TextMeshProUGUI datasetInfoLabel => _datasetInfoLabel;
 	}

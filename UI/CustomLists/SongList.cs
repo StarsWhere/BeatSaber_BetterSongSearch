@@ -1,117 +1,93 @@
-﻿using BeatSaberMarkupLanguage;
-using BeatSaberMarkupLanguage.Attributes;
-using HMUI;
+using System;
 using System.Reflection;
+using System.Threading;
+using System.Threading.Tasks;
+using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage.Attributes;
+using BetterSongSearch.Util;
+using HMUI;
 using TMPro;
 using UnityEngine;
-using BetterSongSearch.Util;
+using UnityEngine.UI;
 
 namespace BetterSongSearch.UI.CustomLists {
-	static class SongListTableData {
-		const string ReuseIdentifier = "REUSECustomSongListTableCell";
-
-		public static CustomSongListTableCell GetCell(TableView tableView) {
-			var tableCell = tableView.DequeueReusableCellForIdentifier(ReuseIdentifier);
-
-			if(tableCell == null) {
-				tableCell = new GameObject("CustomSongListTableCell", typeof(Touchable)).AddComponent<CustomSongListTableCell>();
-				tableCell.interactable = true;
-
-				tableCell.reuseIdentifier = ReuseIdentifier;
-				BSMLParser.Instance.Parse(
-					Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), "BetterSongSearch.UI.CustomLists.SongListCell.bsml"),
-					tableCell.gameObject, tableCell
-				);
-			}
-
-			return (CustomSongListTableCell)tableCell;
-		}
-	}
-
-	class CustomSongListTableCell : TableCell {
-		[UIComponent("fullFormattedSongName")] readonly TextMeshProUGUI fullFormattedSongName = null;
-		[UIComponent("uploadDateFormatted")] readonly TextMeshProUGUI uploadDateFormatted = null;
-		[UIComponent("levelAuthorName")] readonly TextMeshProUGUI levelAuthorName = null;
-		[UIComponent("songLengthAndRating")] readonly TextMeshProUGUI songLengthAndRating = null;
-		TextMeshProUGUI[] diffs = null;
-
-		[UIComponent("diffs")] readonly Transform diffsContainer = null;
-
-		[UIAction("#post-parse")]
-		void Parsed() {
-			diffs = diffsContainer.GetComponentsInChildren<TextMeshProUGUI>();
-		}
-
-		static Color verifiedSongColor = new Color(.7f, 1f, .7f);
-		static Color verifiedUploaderColor = new Color(.46f, .27f, .68f);
-		static Color normalUploaderColor = new Color(.8f, .8f, .8f);
-
-		public CustomSongListTableCell PopulateWithSongData(SongSearchSong song) {
-			var isCurated = (song.detailsSong.uploadFlags & SongDetailsCache.Structs.UploadFlags.Curated) != 0;
-
-			fullFormattedSongName.text = song.fullFormattedSongName.Replace("\n", " ");
-			fullFormattedSongName.color = song.CheckIsDownloaded() ? Color.gray : isCurated ? verifiedSongColor : Color.white;
-
-			uploadDateFormatted.text = song.uploadDateFormatted;
-
-			var isVerified = (song.detailsSong.uploadFlags & SongDetailsCache.Structs.UploadFlags.VerifiedUploader) != 0;
-
-			levelAuthorName.color = isVerified ? verifiedUploaderColor : normalUploaderColor;
-			levelAuthorName.text = song.detailsSong.levelAuthorName;
-			songLengthAndRating.text = song.songLengthAndRating;
-
-
-			var sortedDiffs = song.sortedDiffs.GetEnumerator();
-			var diffsLeft = song.diffs.Length;
-
-			for(var i = 0; i < diffs.Length; i++) {
-				var isActive = diffsLeft != 0;
-
-				diffs[i].gameObject.SetActive(isActive);
-
-				if(!isActive)
-					continue;
-
-				if(diffsLeft != 1 && i == diffs.Length - 1) {
-					diffs[i].text = $"<color=#0AD>+{diffsLeft} More";
-				} else {
-					sortedDiffs.MoveNext();
-					diffs[i].text = sortedDiffs.Current.formattedDiffDisplay;
-					diffsLeft--;
-				}
-			}
-
-			SetFontSizes();
-
-			return this;
-		}
-
-		public void SetFontSizes() {
-			foreach(var d in diffs)
-				d.fontSize = PluginConfig.Instance.smallerFontSize ? 2.5f : 2.9f;
-
-			if(PluginConfig.Instance.smallerFontSize) {
-				fullFormattedSongName.fontSize = 2.7f;
-				uploadDateFormatted.fontSize = 2.7f;
-				levelAuthorName.fontSize = 2.3f;
-				songLengthAndRating.fontSize = 2.5f;
-			} else {
-				fullFormattedSongName.fontSize = 3.2f;
-				uploadDateFormatted.fontSize = 3.2f;
-				levelAuthorName.fontSize = 2.6f;
-				songLengthAndRating.fontSize = 3f;
-			}
-		}
-
-		public override void SelectionDidChange(TransitionType transitionType) => RefreshBgState();
-
-		public override void HighlightDidChange(TransitionType transitionType) => RefreshBgState();
-
-
-		[UIComponent("bgContainer")] ImageView bg = null;
-
-		void RefreshBgState() {
-			bg.color = new Color(0, 0, 0, selected ? 0.8f : highlighted ? 0.6f : 0.45f);
-		}
-	}
+    static class SongListTableData {
+        const string ReuseIdentifier = "BSS.SongSummary";
+        public static CustomSongListTableCell GetCell(TableView tableView) {
+            var cell = tableView.DequeueReusableCellForIdentifier(ReuseIdentifier);
+            if(cell == null) {
+                cell = new GameObject("CustomSongListTableCell",typeof(Touchable)).AddComponent<CustomSongListTableCell>();
+                cell.transform.SetParent(tableView.transform,false);
+                cell.interactable = true;
+                cell.reuseIdentifier = ReuseIdentifier;
+                BSMLParser.Instance.Parse(Utilities.GetResourceContent(Assembly.GetExecutingAssembly(),"BetterSongSearch.UI.CustomLists.SongListCell.bsml"),cell.gameObject,cell);
+                BssTypography.Apply(cell.gameObject);
+            }
+            return (CustomSongListTableCell)cell;
+        }
+    }
+    class CustomSongListTableCell : TableCell {
+        [UIComponent("songName")] TMP_Text songName;
+        [UIComponent("songAuthorName")] TMP_Text songAuthorName;
+        [UIComponent("songSummary")] TMP_Text songSummary;
+        [UIComponent("songStats")] TMP_Text songStats;
+        [UIComponent("songState")] TMP_Text songState;
+        [UIComponent("cover")] Image cover;
+        [UIComponent("bgContainer")] ImageView bg;
+        SongSearchSong song;
+        CancellationTokenSource coverCancel;
+        SongAssetAsyncLoader.CoverLease coverLease;
+        Task coverTask;
+        int revision;
+        [UIAction("#post-parse")] void Parsed() {
+            BssUi.Text(songName,73,4.5f); BssUi.Text(songState,18,4.5f);
+            BssUi.Text(songAuthorName,71,3.5f); BssUi.Text(songStats,20,3.5f); BssUi.Text(songSummary,93,3.5f);
+        }
+        public CustomSongListTableCell PopulateWithSongData(SongSearchSong value) {
+            bool changed = song == null || song.hash != value.hash;
+            song = value;
+            songName.text = SongPresentation.Name(song.detailsSong.songName);
+            songAuthorName.text = SongPresentation.Name(song.detailsSong.songAuthorName) + " · " + BssText.T("Mapper") + " " + SongPresentation.Name(song.detailsSong.levelAuthorName);
+            songStats.text = SongPresentation.Duration(song.detailsSong.songDurationSeconds) + " · " + SongPresentation.Rating(in song.detailsSong);
+            songSummary.text = SongPresentation.DiffSummary(song);
+            songState.text = SongPresentation.State(song);
+            songName.color = new Color(.94f,.96f,.98f);
+            BssTypography.Apply(songName,true);
+            if(changed || coverLease == null) BeginCover();
+            RefreshBgState();
+            return this;
+        }
+        void BeginCover() {
+            ReleaseCover();
+            cover.sprite = SongCore.Loader.defaultCoverImage;
+            if(song == null || BSSFlowCoordinator.assetLoader == null || !isActiveAndEnabled) return;
+            coverCancel = CancellationTokenSource.CreateLinkedTokenSource(BSSFlowCoordinator.closeCancelSource.Token);
+            coverTask = LoadCoverAsync(BSSFlowCoordinator.assetLoader,song,++revision,coverCancel.Token);
+        }
+        async Task LoadCoverAsync(SongAssetAsyncLoader loader,SongSearchSong value,int generation,CancellationToken token) {
+            SongAssetAsyncLoader.CoverLease lease = null;
+            try {
+                lease = await loader.AcquireCoverAsync(value.detailsSong,token);
+                if(token.IsCancellationRequested || !this || generation != revision || song?.hash != value.hash) return;
+                coverLease = lease; lease = null;
+                cover.sprite = coverLease.Sprite;
+            } catch(OperationCanceledException) { }
+              catch(Exception ex) { Plugin.Log.Warn("Cover [" + value.hash + "]: " + ex); }
+            finally { lease?.Dispose(); }
+        }
+        void ReleaseCover() {
+            revision++;
+            coverCancel?.Cancel(); coverCancel?.Dispose(); coverCancel = null;
+            coverLease?.Dispose(); coverLease = null;
+        }
+        protected override void OnEnable() { base.OnEnable(); if(song != null && cover != null) BeginCover(); }
+        public override void OnDisable() { ReleaseCover(); base.OnDisable(); }
+        protected override void OnDestroy() { ReleaseCover(); base.OnDestroy(); }
+        public override void WasPreparedForReuse() { ReleaseCover(); song = null; }
+        public override void SelectionDidChange(TransitionType transitionType) => RefreshBgState();
+        public override void HighlightDidChange(TransitionType transitionType) => RefreshBgState();
+        void RefreshBgState() {
+            if(bg != null) bg.color = selected ? new Color(.05f,.30f,.40f,.96f) : highlighted ? new Color(.12f,.20f,.27f,.94f) : new Color(.065f,.10f,.145f,.85f);
+        }
+    }
 }

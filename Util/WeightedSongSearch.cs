@@ -1,6 +1,8 @@
-﻿using BetterSongSearch.UI;
+using BetterSongSearch.UI;
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
+using System.Threading;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -14,7 +16,7 @@ namespace BetterSongSearch.Util {
 			public float sortWeight;
 		}
 
-		public static IEnumerable<SongSearchSong> Search(IList<SongSearchSong> inList, string filter, Func<SongSearchSong, float> ordersort) {
+		public static IEnumerable<SongSearchSong> Search(IList<SongSearchSong> inList, string filter, Func<SongSearchSong, float> ordersort, CancellationToken token = default) {
 			var words = filter.ToLowerInvariant().Split((string[])null, StringSplitOptions.RemoveEmptyEntries);
 
 			var possibleSongKey = 0u;
@@ -33,7 +35,7 @@ namespace BetterSongSearch.Util {
 			var maxSearchWeight = 0f;
 			var maxSortWeight = 0f;
 
-			Parallel.ForEach(inList, new ParallelOptions() { MaxDegreeOfParallelism = 5 }, x => {
+			Parallel.ForEach(inList, new ParallelOptions() { MaxDegreeOfParallelism = 4, CancellationToken = token }, x => {
 				var resultWeight = 0;
 				var matchedAuthor = false;
 				var prevMatchIndex = -1;
@@ -139,10 +141,7 @@ namespace BetterSongSearch.Util {
 							sortWeight = sortWeight
 						});
 
-#if DEBUG
-						x.sortWeight = sortWeight;
-						x.resultWeight = resultWeight;
-#endif
+
 						if(maxSearchWeight < resultWeight)
 							maxSearchWeight = resultWeight;
 
@@ -156,59 +155,33 @@ namespace BetterSongSearch.Util {
 				return new List<SongSearchSong>();
 
 			var maxSearchWeightInverse = 1f / maxSearchWeight;
-			var maxSortWeightInverse = 1f / maxSortWeight;
+			var minimumSort = prefiltered.Min(x => x.sortWeight);
+			var maximumSort = prefiltered.Max(x => x.sortWeight);
+			var sortRange = (double)maximumSort - minimumSort;
 
 			return prefiltered.OrderByDescending((s) => {
 				var searchWeight = s.searchWeight * maxSearchWeightInverse;
 
-				return searchWeight + Math.Min(searchWeight / 2, s.sortWeight * maxSortWeightInverse * (searchWeight / 2));
+				var sortWeight = sortRange > 0 && !Double.IsInfinity(sortRange) ? (s.sortWeight - (double)minimumSort) / sortRange : 0;
+				return searchWeight + Math.Min(searchWeight / 2, sortWeight * (searchWeight / 2));
 			}).Select(x => x.song);
 		}
 
 
 
-		public static Dictionary<string, string> cachedSearchableStrings;
-		static unsafe string MakeStringSearchable(string s) {
-			// Eh whatever
-			if(s.Length > 255)
-				return s;
-
-			if(cachedSearchableStrings != null && cachedSearchableStrings.TryGetValue(s, out var _s))
-				return _s ?? s;
-
-			var normalizedString = s.Normalize(NormalizationForm.FormD);
-
-			var pos = 0;
-			var modified = false;
-			char* challoc = stackalloc char[s.Length];
-
-			for(var i = 0; i < normalizedString.Length; i++) {
-				var c = normalizedString[i];
-
-				var cat = CharUnicodeInfo.GetUnicodeCategory(c);
-
-				if(cat == UnicodeCategory.NonSpacingMark) {
-					modified = true;
-					continue;
-				}
-
-				// adds 32 (Ascii ' ') to the A-Z charcode and thus converts it to a-z lmao
-				if(cat == UnicodeCategory.LowercaseLetter || cat == UnicodeCategory.SpaceSeparator || cat == UnicodeCategory.DecimalDigitNumber) {
-					challoc[pos++] = c;
-				} else if(cat == UnicodeCategory.UppercaseLetter && c < '[') {
-					challoc[pos++] = (char)(c + ' ');
-					modified = true;
-				}
-			}
-
-			cachedSearchableStrings ??= new Dictionary<string, string>(BSSFlowCoordinator.songsList?.Length ?? 69420);
-
-			if(!modified && pos == s.Length) {
-				cachedSearchableStrings[s] = null;
-				return s;
-			}
-
-			return cachedSearchableStrings[s] = new string(challoc, 0, pos);
-		}
-	}
+        public static readonly ConcurrentDictionary<string,string> cachedSearchableStrings = new ConcurrentDictionary<string,string>();
+        static string MakeStringSearchable(string value) {
+            if(cachedSearchableStrings.TryGetValue(value,out string cached)) return cached;
+            var normalized = value.Normalize(NormalizationForm.FormD).ToLowerInvariant();
+            var builder = new StringBuilder(normalized.Length);
+            foreach(char c in normalized) {
+                var category = CharUnicodeInfo.GetUnicodeCategory(c);
+                if(category == UnicodeCategory.NonSpacingMark) continue;
+                builder.Append(Char.IsLetterOrDigit(c) ? c : ' ');
+            }
+            string result = builder.ToString();
+            if(cachedSearchableStrings.Count < 100000) cachedSearchableStrings.TryAdd(value,result);
+            return result;
+        }
+    }
 }

@@ -17,7 +17,7 @@ namespace BetterSongSearch.UI.SplitViews {
 			set {
 				PluginConfig.Instance.preferredLeaderboard = value;
 
-				FilterView.limitedUpdateData.CallNextFrame();
+				BSSFlowCoordinator.FilterSongs();
 			}
 		}
 
