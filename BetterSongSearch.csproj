@@ -8,6 +8,7 @@
     <RootNamespace>BetterSongSearch</RootNamespace>
     <Version>0.8.2</Version>
     <InformationalVersion>0.8.2+bs1.45.2.download1</InformationalVersion>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <EnableFrameworkPathOverride>true</EnableFrameworkPathOverride>
     <FrameworkPathOverride>$(GameRoot)/Beat Saber_Data/Managed</FrameworkPathOverride>
     <OutputPath>$(MSBuildProjectDirectory)/.tmp/out/</OutputPath>
