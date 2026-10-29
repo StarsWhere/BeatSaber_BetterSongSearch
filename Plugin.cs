@@ -30,13 +30,15 @@ namespace BetterSongSearch {
 		}
 
 		public void MainMenuInit() {
+            UI.DownloadHistoryView.GetOrCreate().RequestSongRefresh();
 			UI.Manager.Init();
 			SharedCoroutineStarter.Init();
 		}
 
 		[OnExit]
 		public void OnApplicationQuit() {
-
+			UI.DownloadHistoryView.Instance?.Shutdown();
+			Util.BssTypography.Dispose();
 		}
 	}
 }

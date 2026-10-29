@@ -1,127 +1,156 @@
-﻿using IPA.Utilities.Async;
+using IPA.Utilities.Async;
+using SongPackageIO;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
-using System.Runtime.InteropServices;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using static BetterSongSearch.UI.DownloadHistoryView;
 
 namespace BetterSongSearch.Util {
 	static class SongDownloader {
-		public static async Task BeatmapDownload(DownloadHistoryEntry entry, CancellationToken token, Action<float> progressCb) {
-			var folderName = $"{entry.key} ({entry.songName} - {entry.levelAuthorName})";
+		// A finite, injectable seam keeps queue tests independent of Unity's
+		// networking stack. Production code leaves this null.
+		internal static Func<DownloadHistoryEntry, CancellationToken, Action<float>, Task> DownloadOverride;
 
-			var baseUrl = PluginConfig.Instance.downloadUrlOverride;
+		internal sealed class FailureInfo {
+			public readonly string Category;
+			public readonly bool Transient;
+			public readonly string UserMessage;
 
-			if(baseUrl.Length == 0)
-				baseUrl = entry.retries == 0 ? BeatSaverRegionManager.mapDownloadUrl : BeatSaverRegionManager.mapDownloadUrlFallback;
-
-			var dl = await UnityWebrequestWrapper.DownloadBytes($"{baseUrl}/{entry.hash}.zip".ToLowerInvariant(), token, (p) => {
-				entry.status = DownloadHistoryEntry.DownloadStatus.Downloading;
-				progressCb(p);
-			});
-
-			if(dl == null || dl.Length == 0)
-				throw new FileNotFoundException();
-
-			var t = new CancellationTokenSource();
-			token.Register(t.Cancel);
-
-			using(var s = new MemoryStream(dl)) {
-				entry.status = DownloadHistoryEntry.DownloadStatus.Extracting;
-				progressCb(0);
-
-				var sThread = SynchronizationContext.Current;
-
-				await Task.Run(() => ExtractZip(s, folderName, t.Token, (p) => sThread.Post(_ => progressCb(p), null)));
+			public FailureInfo(string category, bool transient, string userMessage) {
+				Category = category;
+				Transient = transient;
+				UserMessage = userMessage;
 			}
 		}
 
-		static unsafe void ExtractZip(Stream zipStream, string basePath, CancellationToken token, Action<float> progressCb, bool overwrite = false) {
-			basePath = string.Concat(basePath.Split(Path.GetInvalidFileNameChars())).Trim();
+		internal sealed class SongDownloadException : Exception {
+			internal readonly string Category;
+			internal readonly bool Transient;
+			internal readonly string UserMessage;
 
-			int steps;
-			var progress = 0;
-			var files = new Dictionary<string, (IntPtr ptr, UnmanagedMemoryStream stream)>(4);
-
-			try {
-				var longestFileNameLength = 0;
-
-				// Unzip everything to memory first so we dont end up writing half a song incase something breaks
-				using(var archive = new ZipArchive(zipStream, ZipArchiveMode.Read)) {
-					steps = archive.Entries.Count() * 2;
-
-					foreach(var entry in archive.Entries) {
-						var len = (int)entry.Length;
-
-						// If a file, supposedly, is bigger than that we can assume its malicious
-						if(len > 200_000_000)
-							throw new InvalidDataException();
-
-						// Dont extract directories / sub-files
-						if(entry.FullName.IndexOf('/') == -1) {
-							using(var str = entry.Open()) {
-								var file = Marshal.AllocHGlobal(len);
-								var x = new UnmanagedMemoryStream((byte*)file, len, len, FileAccess.ReadWrite);
-
-								str.CopyTo(x);
-
-								x.Position = 0;
-
-								files[entry.Name] = (file, x);
-
-								if(entry.Name.Length > longestFileNameLength)
-									longestFileNameLength = entry.Name.Length;
-							}
-						} else {
-							// As this wont extract anthing further down we need to increase the process for it in advance
-							progress++;
-						}
-
-						progressCb((float)++progress / steps);
-					}
-				}
-
-				// Failsafe so we dont break songcore. Info.dat, a diff and the song itself - not sure if the cover is needed
-				if(files.Count < 3 || !files.Keys.Any(x => x.Equals("info.dat", StringComparison.OrdinalIgnoreCase)))
-					throw new InvalidDataException();
-
-				token.ThrowIfCancellationRequested();
-
-				var path = Path.Combine(Directory.GetCurrentDirectory(), CustomLevelPathHelper.customLevelsDirectoryPath, basePath);
-
-				if(path.Length > 253 - longestFileNameLength)
-					path = $"{path.Substring(0, 253 - longestFileNameLength - 7)}..";
-
-				if(!overwrite && Directory.Exists(path)) {
-					var pathNum = 1;
-					while(Directory.Exists(path + $" ({pathNum})"))
-						pathNum++;
-
-					path += $" ({pathNum})";
-				}
-
-				if(!Directory.Exists(path))
-					Directory.CreateDirectory(path);
-
-				foreach(var e in files) {
-					var entryPath = Path.Combine(path, e.Key);
-					if(overwrite || !File.Exists(entryPath)) {
-						using(var s = File.OpenWrite(entryPath)) {
-							e.Value.stream.CopyTo(s);
-							s.SetLength(s.Position);
-						}
-					}
-
-					progressCb((float)++progress / steps);
-				}
-			} finally {
-				foreach(var item in files)
-					Marshal.FreeHGlobal(item.Value.ptr);
+			internal SongDownloadException(string category, bool transient, string userMessage, Exception inner = null)
+				: base(userMessage, inner) {
+				Category = category;
+				Transient = transient;
+				UserMessage = userMessage;
 			}
+		}
+
+		internal static FailureInfo ClassifyFailure(Exception exception) {
+			if(exception is AggregateException aggregate && aggregate.InnerExceptions.Count == 1)
+				exception = aggregate.InnerException;
+
+			if(exception is SongDownloadException known)
+				return new FailureInfo(known.Category, known.Transient, SafeMessage(known.Category));
+
+			if(exception is InvalidSongPackageException)
+				return new FailureInfo("invalid-archive", false, "Invalid map archive");
+
+			if(exception is SongPackageIOException)
+				return new FailureInfo("storage", false, "Cannot save map");
+
+			if(exception is OperationCanceledException)
+				return new FailureInfo("cancelled", false, "Cancelled");
+
+			if(exception is FileNotFoundException)
+				return new FailureInfo("not-found", false, "Map unavailable");
+
+			if(exception is InvalidDataException)
+				return new FailureInfo("invalid-archive", false, "Invalid map archive");
+
+			if(exception is TimeoutException || exception is WebException || exception is IOException)
+				return new FailureInfo("network", true, "Network error");
+
+			return new FailureInfo("unknown", false, "Download failed");
+		}
+
+		static string SafeMessage(string category) {
+			switch(category) {
+				case "network": return "Network error";
+				case "not-found": return "Map unavailable";
+				case "invalid-archive": return "Invalid map archive";
+				case "storage": return "Cannot save map";
+				case "cancelled": return "Cancelled";
+				case "request": return "Download request rejected";
+				default: return "Download failed";
+			}
+		}
+
+		public static async Task BeatmapDownload(DownloadHistoryEntry entry, CancellationToken token, Action<float> progressCb) {
+			if(DownloadOverride != null) {
+				entry.status = DownloadHistoryEntry.DownloadStatus.Downloading;
+				entry.statusDetails = "(0%)";
+				progressCb?.Invoke(0f);
+				await DownloadOverride(entry, token, progressCb);
+				return;
+			}
+
+			var folderName = $"{entry.key} ({entry.songName} - {entry.levelAuthorName})";
+
+			var baseUrl = PluginConfig.Instance?.downloadUrlOverride;
+			if(string.IsNullOrEmpty(baseUrl))
+				baseUrl = entry.retries <= 1 ? BeatSaverRegionManager.mapDownloadUrl : BeatSaverRegionManager.mapDownloadUrlFallback;
+
+			entry.status = DownloadHistoryEntry.DownloadStatus.Downloading;
+			entry.statusDetails = "(0%)";
+			progressCb?.Invoke(0f);
+			var dl = await UnityWebrequestWrapper.DownloadBytes($"{baseUrl}/{entry.hash}.zip".ToLowerInvariant(), token, progress => {
+				if(token.IsCancellationRequested)
+					return;
+				entry.status = DownloadHistoryEntry.DownloadStatus.Downloading;
+				progressCb?.Invoke(progress);
+			});
+			token.ThrowIfCancellationRequested();
+
+			if(dl == null || dl.Length == 0)
+				throw new SongDownloadException("network", true, "Network error");
+
+			using(var extractionCancel = CancellationTokenSource.CreateLinkedTokenSource(token))
+			using(var stream = new MemoryStream(dl)) {
+				token.ThrowIfCancellationRequested();
+				entry.status = DownloadHistoryEntry.DownloadStatus.Extracting;
+				entry.statusDetails = "(0%)";
+				progressCb?.Invoke(0f);
+
+				var callbackContext = SynchronizationContext.Current;
+				Action<float> reportProgress = progress => {
+					if(callbackContext == null)
+						progressCb?.Invoke(progress);
+					else
+						callbackContext.Post(_ => progressCb?.Invoke(progress), null);
+				};
+
+				try {
+					var customLevelsRoot = Path.Combine(Directory.GetCurrentDirectory(), CustomLevelPathHelper.customLevelsDirectoryPath);
+					var stagingRoot = Path.Combine(Directory.GetCurrentDirectory(), ".tmp", "better-song-search-song-import");
+					await Task.Run(() => PackageImporter.Install(stream, customLevelsRoot, SanitizeFolderName(folderName), stagingRoot,
+						extractionCancel.Token, reportProgress), extractionCancel.Token);
+				} catch(InvalidSongPackageException) {
+					throw;
+				} catch(InvalidDataException) {
+					throw;
+				} catch(IOException exception) {
+					throw new SongDownloadException("storage", false, "Cannot save map", exception);
+				} catch(UnauthorizedAccessException exception) {
+					throw new SongDownloadException("storage", false, "Cannot save map", exception);
+				}
+			}
+		}
+
+		static string SanitizeFolderName(string value) {
+			var invalid = new HashSet<char>(Path.GetInvalidFileNameChars().Concat(Path.GetInvalidPathChars()));
+			var sanitized = string.Concat(value.Where(character => !invalid.Contains(character))).Trim();
+			if(string.IsNullOrEmpty(sanitized) || sanitized == "." || sanitized == "..")
+				return "Beatmap";
+			if(sanitized.Length > 180)
+				sanitized = sanitized.Substring(0, 180).TrimEnd(' ', '.');
+			if(string.IsNullOrEmpty(sanitized) || sanitized == "." || sanitized == "..")
+				return "Beatmap";
+			return sanitized;
 		}
 	}
 }

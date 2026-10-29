@@ -1,4 +1,4 @@
-﻿using BeatSaberMarkupLanguage;
+using BeatSaberMarkupLanguage;
 using BeatSaberMarkupLanguage.Parser;
 using HMUI;
 using System.Collections;
@@ -9,54 +9,14 @@ using UnityEngine.UI;
 
 namespace BetterSongSearch.Util {
 	static class BSMLStuff {
-		public static IEnumerator MergeSliders(GameObject container, bool constrictValuesMinMax = true) {
-			yield return null;
-			foreach(var x in container.GetComponentsInChildren<CurvedTextMeshPro>().Where(x => x.text == "MERGE_TO_PREV")) {
-				yield return new WaitForEndOfFrame();
-				var ourContainer = x.transform.parent;
-				var prevContainer = ourContainer.parent.GetChild(ourContainer.GetSiblingIndex() - 1);
-
-				(prevContainer.Find("BSMLSlider").transform as RectTransform).offsetMax = new Vector2(-20, 0);
-				(ourContainer.Find("BSMLSlider").transform as RectTransform).offsetMin = new Vector2(-20, 0);
-				ourContainer.position = prevContainer.position;
-
-				var minTimeSlider = prevContainer.GetComponentInChildren<TextSlider>();
-				var maxTimeSlider = ourContainer.GetComponentInChildren<TextSlider>();
-
-				if(minTimeSlider == null || maxTimeSlider == null)
-					yield break;
-
-				maxTimeSlider.valueSize = minTimeSlider.valueSize /= 2.1f;
-
-				ourContainer.GetComponentInChildren<LayoutElement>().ignoreLayout = true;
-				x.text = "";
-
-				// I tried to get this to work for an hour, cba for now
-				//if(!constrictValuesMinMax)
-				//	continue;
-
-				//var minTimeSliderBsml = minTimeSlider.GetComponentInParent<SliderSetting>();
-				//var maxTimeSliderBsml = maxTimeSlider.GetComponentInParent<SliderSetting>();
-
-				//var originalMinMax = minTimeSlider.maxValue;
-				//var originalMaxMin = maxTimeSlider.minValue;
-
-				//minTimeSlider.normalizedValueDidChangeEvent += (slider, value) => {
-				//	var m = ReflectionUtil.GetField<float, TextSlider>(maxTimeSlider, "_normalizedValue");
-				//	var limit = Math.Min(originalMaxMin, maxTimeSlider.value);
-				//	ReflectionUtil.SetField((RangeValuesTextSlider)maxTimeSlider, "_minValue", limit);
-				//	maxTimeSlider.value = value;
-				//};
-
-				//maxTimeSlider.normalizedValueDidChangeEvent += (slider, value) => {
-				//	var m = ReflectionUtil.GetField<float, TextSlider>(minTimeSlider, "_normalizedValue");
-				//	var limit = Math.Max(originalMinMax, maxTimeSlider.value);
-				//	ReflectionUtil.SetField((RangeValuesTextSlider)slider, "_maxValue", limit);
-				//	minTimeSlider.value = value;
-				//};
-			}
+		public static void InitializeScrollViews(GameObject root) {
+			var platform = Resources.FindObjectsOfTypeAll<ScrollView>().Select(x => x._platformHelper).FirstOrDefault(x => x != null);
+			if(platform != null) foreach(var scroll in root.GetComponentsInChildren<ScrollView>(true)) IPA.Utilities.ReflectionUtil.SetField(scroll,"_platformHelper",platform);
+            foreach(var table in root.GetComponentsInChildren<TableView>(true)) {
+                var scroll=table.GetComponent<ScrollView>();
+                if(scroll!=null && scroll._contentRectTransform!=null) table._contentTransform=scroll._contentRectTransform;
+            }
 		}
-
 		public static BSMLParserParams InitSplitView(ref BSMLParserParams pparams, GameObject targetGameObject, object host, string viewName = null) {
 			if(pparams != null)
 				return pparams;
@@ -64,7 +24,10 @@ namespace BetterSongSearch.Util {
 			if(viewName == null)
 				viewName = host.GetType().Name;
 
-			return pparams = BSMLParser.Instance.Parse(Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), $"BetterSongSearch.UI.Views.SplitViews.{viewName}.bsml"), targetGameObject, host);
+			var previous=targetGameObject.transform.Cast<Transform>().ToArray();
+			pparams = BSMLParser.Instance.Parse(Utilities.GetResourceContent(Assembly.GetExecutingAssembly(), $"BetterSongSearch.UI.Views.SplitViews.{viewName}.bsml"), targetGameObject, host);
+            foreach(Transform child in targetGameObject.transform) if(!previous.Contains(child)) BssUi.Settings(child.gameObject,72);
+			return pparams;
 		}
 
 		static GameObject scrollBar = null;

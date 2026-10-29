@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Reflection;
+using System.IO;
+using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -13,6 +15,8 @@ namespace BetterSongSearch.Util {
 			var www = uwr ?? UnityWebRequest.Get(url);
 
 			try {
+				token.ThrowIfCancellationRequested();
+				www.timeout = 90;
 				www.SetRequestHeader("User-Agent", UserAgent);
 				if(handler != null)
 					www.downloadHandler = handler;
@@ -21,7 +25,7 @@ namespace BetterSongSearch.Util {
 
 				var req = www.SendWebRequest();
 
-				var lastState = 0f;
+				ulong lastBytes = 0;
 				var timeouter = new System.Diagnostics.Stopwatch();
 				timeouter.Start();
 
@@ -33,23 +37,30 @@ namespace BetterSongSearch.Util {
 
 					await Task.Delay(20);
 
-					if(lastState == www.downloadProgress) {
-						if(timeouter.ElapsedMilliseconds < (lastState == 0 ? 6000 : 10000))
+					if(lastBytes == www.downloadedBytes) {
+						if(timeouter.ElapsedMilliseconds < (lastBytes == 0 ? 15000 : 20000))
 							continue;
 
 						www.Abort();
 						throw new TimeoutException();
 					}
 
-					lastState = www.downloadProgress;
+					lastBytes = www.downloadedBytes;
 
-					if(progressCb != null && lastState > 0)
-						progressCb(lastState);
+					if(progressCb != null && www.downloadProgress > 0)
+						progressCb(www.downloadProgress);
 
 					timeouter.Restart();
 				}
 
-				return www.isDone && www.result == UnityWebRequest.Result.Success;
+				token.ThrowIfCancellationRequested();
+				if(www.result != UnityWebRequest.Result.Success) {
+					if(www.responseCode == 404 || www.responseCode == 410) throw new FileNotFoundException("HTTP " + www.responseCode + ": " + url);
+					if(www.responseCode >= 400 && www.responseCode < 500 && www.responseCode != 408 && www.responseCode != 429)
+						throw new SongDownloader.SongDownloadException("request", false, "Download request rejected", new WebException("HTTP " + www.responseCode + ": " + url));
+					throw new WebException("HTTP " + www.responseCode + ": " + www.error + " (" + url + ")");
+				}
+				return true;
 			} finally {
 				if(www != null && uwr == null)
 					www.Dispose();
