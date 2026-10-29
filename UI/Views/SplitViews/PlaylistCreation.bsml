@@ -1,10 +1,9 @@
-﻿<bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='- https://raw.githubusercontent.com/monkeymanboy/BSML-Docs/gh-pages/BSMLSchema.xsd'>
-	<modal clickerino-offerino-closerino='true' show-event='ShowModal' hide-event='CloseModal' size-delta-x='90' size-delta-y='80'>
+<bg xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' xsi:schemaLocation='- https://raw.githubusercontent.com/monkeymanboy/BSML-Docs/gh-pages/BSMLSchema.xsd'>
+	<modal clickerino-offerino-closerino='true' show-event='ShowModal' hide-event='CloseModal' size-delta-x='90' size-delta-y='65'>
 		<vertical horizontal-fit='Unconstrained' pad='4' pad-top='9'>
 			<horizontal bg='panel-top-gradient' ignore-layout='true' anchor-max-x='.97' anchor-min-x='.03' anchor-min-y='1' anchor-pos-y='-5'>
-				<text text='BetterSongSearch - Playlist Creation' align='Center'/>
+				<text font-size='2.6' text='Create / Update Playlist' align='Center'/>
 			</horizontal>
-			<text text="Creates a Playlist based off your current Search / Filter settings. Songs are picked starting from your list position, duplicate songs are prevented. The playlist is saved in a BetterSongSearch sub-folder" word-wrapping='true'/>
 			<vertical horizontal-fit='Unconstrained' child-expand-height='false'>
 				<string-setting text='Playlist Name' id='playlistName'/>
 				<toggle-setting text='Clear if already exists' value='clearExisting' apply-on-change='true'/>
@@ -12,8 +11,8 @@
 				<slider-setting min='20' max='3000' increment='20' text='Amount of Songs' integer-only='true' id='playlistSongsCountSlider' show-buttons='true'/>
 			</vertical>
 			<horizontal pad-top='4'>
-				<primary-button text='Create' on-click='CreatePlaylist'/>
-				<button text='Cancel' click-event='CloseModal'/>
+				<primary-button font-size='2.6' text='Create' on-click='CreatePlaylist'/>
+				<button font-size='2.6' text='Cancel' click-event='CloseModal'/>
 			</horizontal>
 		</vertical>
 	</modal>
@@ -21,12 +20,12 @@
 	<modal clickerino-offerino-closerino='true' show-event='ShowResultModal' hide-event='CloseResultModal' size-delta-x='80' size-delta-y='40'>
 		<vertical horizontal-fit='Unconstrained' pad='4' pad-top='9'>
 			<horizontal bg='panel-top-gradient' ignore-layout='true' anchor-max-x='.97' anchor-min-x='.03' anchor-min-y='1' anchor-pos-y='-5'>
-				<text text='BetterSongSearch - Playlist Creation' align='Center'/>
+				<text font-size='2.6' text='Create / Update Playlist' align='Center'/>
 			</horizontal>
 			<horizontal pad-bottom='4'>
-				<text id='resultText' text='Joe' word-wrapping='true' align='Center'/>
+				<text font-size='2.6' id='resultText' text='' word-wrapping='true' align='Center'/>
 			</horizontal>
-			<primary-button text='OK' click-event='CloseResultModal'/>
+			<primary-button font-size='2.6' text='OK' click-event='CloseResultModal'/>
 		</vertical>
 	</modal>
 </bg>
